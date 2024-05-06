@@ -9,13 +9,14 @@ else:
 
 import nltk
 from nltk.corpus import stopwords
-nltk.download('stopwords')
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
+# nltk.download('stopwords')
+# nltk.download('punkt')
+# nltk.download('averaged_perceptron_tagger')
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 
+from typing import Callable
 import pandas as pd
 
 goodbye_messages = [
@@ -56,6 +57,39 @@ def shorten_email(original:str) -> str:
             first_bye = i
     return original[start:first_bye]
 
+def not_stopword(word: str) -> bool:
+    """
+    Checks if word is NOT a stopword.
+    """
+    stop_words = set(stopwords.words("english"))
+    return word.lower() not in stop_words
+
+def not_digit(word: str) -> bool:
+    """
+    Checks if word is NOT a digit.
+    """
+    return not word.isdigit()
+
+def keywords(email: str, conditions: list[Callable[[str], bool]] = 
+             [not_stopword, not_digit]) -> list[str]:
+    """
+    Given an email body and conditions to determine whether each word 
+    is a keyword, returns list of keywords
+    """
+    words = word_tokenize(email)
+    filtered: list[str] = []
+    for word in words:
+        iskeyword = True
+        for c in conditions:
+            if c(word) == False:
+                iskeyword = False
+                break
+        if iskeyword:
+            filtered.append(word)
+    
+    return filtered
+    
+
 def get_comment(email:str):
     """
     Returns the short email comment.
@@ -71,6 +105,7 @@ def get_comment(email:str):
     keywords = [word for word in words if not word.isdigit() and 
                 word.lower() not in stop_words]
     keyword_tags = [tag for tag in tags if tag[0] in keywords]
+    print(keyword_tags)
 
     comments: list[list[tuple[str,str]]] = []
 
@@ -97,3 +132,4 @@ df = pd.read_csv('task.csv', encoding='latin-1')
 # print(df)
 
 # working with df row 30
+# Implement pos tags before removing stopwords next time
