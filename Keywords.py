@@ -70,65 +70,93 @@ def not_digit(word: str) -> bool:
     """
     return not word.isdigit()
 
-def keywords(email: str, conditions: list[Callable[[str], bool]] = 
-             [not_stopword, not_digit]) -> list[str]:
+def keyword_tags(email: str, conditions: list[Callable[[str], bool]] = 
+             [not_stopword, not_digit]) -> list[tuple[str, str]]:
     """
     Given an email body and conditions to determine whether each word 
     is a keyword, returns list of keywords
     """
     words = word_tokenize(email)
+    tags = nltk.pos_tag(words)
     filtered: list[str] = []
-    for word in words:
+    for i in range(len(words)):
         iskeyword = True
         for c in conditions:
-            if c(word) == False:
+            if c(words[i]) == False:
                 iskeyword = False
                 break
         if iskeyword:
-            filtered.append(word)
+            filtered.append(tags[i])
     
     return filtered
     
 
-def get_comment(email:str):
+def get_comment_pos(email:str):
     """
     Returns the short email comment.
     """
 
     # Tokenize the text into words
-    words = word_tokenize(email)
-    tags = nltk.pos_tag(words)
-    print([tag for tag in tags if 'VB' in tag[1]])
-
-    # Remove stopwords
-    stop_words = set(stopwords.words("english"))
-    keywords = [word for word in words if not word.isdigit() and 
-                word.lower() not in stop_words]
-    keyword_tags = [tag for tag in tags if tag[0] in keywords]
-    print(keyword_tags)
+    email_body = shorten_email(email)
+    ktags = keyword_tags(email_body, conditions = [not_digit])
 
     comments: list[list[tuple[str,str]]] = []
 
-    phrase = []
-    for t in range(len(keyword_tags)):
-        if keyword_tags[t][1] == 'VB':
-            phrase = [keyword_tags[t]]
-        adding_nouns = False
-
-        if len(phrase) > 0:
-            if keyword_tags[t][1] != '.':
-                phrase.append(keyword_tags[t])
+    find_verb = True
+    find_obj = False
+    end_chain = False
+    for i in range(len(ktags)):
+        # print(ktags[i]) if 'VB' in ktags[i][1] else None
+        if find_verb and ktags[i][1] == 'VB':
+            find_obj = True
+            find_verb = False
+            temp = [ktags[i]]
+        elif find_obj:
+            if not end_chain:
+                if 'VB' in ktags[i][1] or 'JJ' in ktags[i][1] or 'NN' in ktags[i][1]:
+                    temp.append(ktags[i])
+                if 'NN' in ktags[i][1]:
+                    end_chain = True
             else:
-                comments.append(phrase)
-                phrase = []
-                # Phrases may be overwritten
+                if 'NN' in ktags[i][1]:
+                    temp.append(ktags[i])
+                else:
+                    find_verb = True
+                    find_obj = False
+                    end_chain = False
+                    comments.append(temp)
     return comments
+
+    # phrase = []
+    # for t in range(len(keyword_tags)):
+    #     if keyword_tags[t][1] == 'VB':
+    #         phrase = [keyword_tags[t]]
+    #     adding_nouns = False
+
+    #     if len(phrase) > 0:
+    #         if keyword_tags[t][1] != '.':
+    #             phrase.append(keyword_tags[t])
+    #         else:
+    #             comments.append(phrase)
+    #             phrase = []
+    #             # Phrases may be overwritten
+    # return comments
+
+def get_comment_from_pos(email: str):
+    tags = get_comment_pos(email)
+    message = ''
+    for l in tags:
+        part = ''
+        for tag in l:
+            part = part + ' ' + tag[0]
+        message = message + part + ' | '
+    return message
 
 # with open("temp_text.txt", "r") as file1:
 #   text = file1.read().replace("\n", "")
 #   (extract_email_body(text))
 
-df = pd.read_csv('task.csv', encoding='latin-1')
+# df = pd.read_csv('task.csv', encoding='latin-1')
 # print(df)
 
 # working with df row 30
