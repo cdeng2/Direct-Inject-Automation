@@ -141,7 +141,6 @@ def get_comment_pos(email:str):
     #             phrase = []
     #             # Phrases may be overwritten
     # return comments
-
 def get_comment_from_pos(email: str):
     tags = get_comment_pos(email)
     message = ''
