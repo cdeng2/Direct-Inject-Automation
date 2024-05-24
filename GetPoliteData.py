@@ -11,7 +11,8 @@ has_comments: pd.Series = df_comments['Comment:'].notna()
 df_comments.rename(columns={'Short description': 'Subject', 
                             'Comment:': 'Comment'}, inplace=True)
 cleaned_data = df_comments[has_comments][['Number', 'Subject', 'Comment']]
-df_emails.rename(columns={'number': 'Number'}, inplace=True)
+df_emails.rename(columns={'number': 'Number', 'description': 'Description'}, 
+                 inplace=True)
 
 # Cleaning: Removes \n from des., remove Subject prefix and suffix
 df_emails['description'] = df_emails['description'].apply(
@@ -19,7 +20,8 @@ df_emails['description'] = df_emails['description'].apply(
 # IMPLEMENT SUBJECT REMOVAL
 
 # Merges the descriptions to cleaned_data
-merged = pd.merge(cleaned_data, df_emails[['Number', 'description']], how='left', on='Number')
+merged = pd.merge(cleaned_data, df_emails[['Number', 'description']], how='left', 
+                  on='Number')
 merged.to_csv('CleanedPolite.csv', index=False)
 
 
